@@ -1,5 +1,6 @@
 **/.vs/**/*
 /**/[Pp]ackages/**
 /**/*.user
+/**/*.log
 /**/[Dd]ebug/**
 /**/[Rr]elease/**
