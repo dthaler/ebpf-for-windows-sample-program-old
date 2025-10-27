@@ -1,0 +1,43 @@
+#!/usr/bin/env bash
+
+# Copyright (c) eBPF for Windows contributors
+# SPDX-License-Identifier: MIT
+
+# Git pre-commit hook for code quality checks
+# To install: copy this file to .git/hooks/pre-commit and make it executable
+
+set -o errexit
+
+exit_() {
+    echo ""
+    echo "$1"
+    echo ""
+    echo "This hook can be skipped if needed with 'git commit --no-verify'"
+    echo "See '.git/hooks/pre-commit', installed from 'scripts/pre-commit'"
+    exit 1
+}
+
+# Get list of staged files
+files=($(git diff --cached --name-only --diff-filter=ACMR))
+
+if [[ ${#files[@]} -eq 0 ]]; then
+    # When 'git commit --amend' is used, the files list is empty. The
+    # scripts below interpret an empty file set as a directive to
+    # check all the files, which is slow (but used in CI). So in this
+    # Git hook, we just skip the following checks instead.
+    exit 0
+fi
+
+scripts=$(git rev-parse --show-toplevel)/scripts
+
+# Check code formatting
+if command -v clang-format &> /dev/null; then
+    if ! "$scripts/format-code.ps1" -Quiet -WhatIf -Files "${files[*]}"; then
+        exit_ "Commit failed: to fix the formatting please run './scripts/format-code.ps1 -Staged' in PowerShell or use clang-format"
+    fi
+fi
+
+# Check license headers
+if ! "$scripts/check-license.sh" "${files[@]}"; then
+    exit_ "Commit failed: please add license headers to the above files"
+fi
